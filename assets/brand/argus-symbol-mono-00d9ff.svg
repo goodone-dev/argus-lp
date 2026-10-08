@@ -1,0 +1,6 @@
+<svg fill="#00d9ff" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"><title>Argus logo</title>
+  <!-- Outer Chevron (Apex) -->
+  <path d="M 128 36 L 220 180 L 172 180 L 128 111.13 L 84 180 L 36 180 Z" fill="#00d9ff"/>
+  <!-- Inner Base (Grounding vector) -->
+  <polygon points="128,140 160,190 96,190" fill="#00d9ff"/>
+</svg>

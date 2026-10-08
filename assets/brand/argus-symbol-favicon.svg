@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>Argus logo</title><g transform="translate(-46.72 -38.53) scale(1.365)">
+  
+  <defs>
+    <linearGradient id="argus-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+  <path d="M 128 44 L 218 200 L 178 200 L 128 113.4 L 78 200 L 38 200 Z" fill="url(#argus-grad)"/>
+  <polygon points="128,144.57 160,200 96,200" fill="url(#argus-grad)"/>
+</g></svg>
