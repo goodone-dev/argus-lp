@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Argus — Autonomous Crypto Intelligence</title>
+    
+    <!-- Brand Favicons -->
+    <link rel="icon" href="/assets/brand/favicon.ico" sizes="48x48">
+    <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+    <link rel="manifest" href="/assets/brand/site.webmanifest">
+    <meta name="theme-color" content="#050505">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', '"Liberation Mono"', '"Courier New"', 'monospace'],
+                    },
+                    colors: {
+                        oled: '#050505',
+                        core: '#0a0a0a',
+                        cyan: {
+                            400: '#00d9ff',
+                            500: '#00b8db',
+                        }
+                    },
+                    transitionTimingFunction: {
+                        'fluid': 'cubic-bezier(0.32, 0.72, 0, 1)',
+                    },
+                    animation: {
+                        'fade-up': 'fadeUp 1s cubic-bezier(0.32, 0.72, 0, 1) forwards',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeUp: {
+                            '0%': { opacity: 0, transform: 'translateY(4rem) scale(0.95)', filter: 'blur(8px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .noise-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+        }
+
+        .glow-orb-1 {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(0,217,255,0.08) 0%, rgba(5,5,5,0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .glow-orb-2 {
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(16,185,129,0.05) 0%, rgba(5,5,5,0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(4rem) scale(0.95);
+            filter: blur(8px);
+            transition: all 1s cubic-bezier(0.32, 0.72, 0, 1);
+            will-change: transform, opacity, filter;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0px);
+        }
+
+        .arch-path {
+            stroke-dasharray: 10;
+            animation: flow 30s linear infinite;
+        }
+        @keyframes flow {
+            to { stroke-dashoffset: -1000; }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-white/20 selection:text-white min-h-[100dvh] relative flex flex-col">
+
+    <div class="noise-overlay"></div>
+    <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none">
+        <div class="glow-orb-1"></div>
+        <div class="glow-orb-2"></div>
+    </div>
+
+    <!-- Floating Nav -->
+    <nav class="fixed top-6 left-0 right-0 z-40 flex justify-center px-4 w-full">
+        <div class="backdrop-blur-2xl bg-white/5 ring-1 ring-white/10 rounded-full px-6 py-3 flex items-center justify-between w-full max-w-5xl transition-all duration-500 ease-fluid shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+            <a href="#" class="flex items-center gap-3 group">
+                <svg width="22" height="22" fill="#ffffff" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" class="transition-transform duration-500 ease-fluid group-hover:scale-110">
+                    <path d="M 128 44 L 218 200 L 178 200 L 128 113.4 L 78 200 L 38 200 Z"/>
+                    <polygon points="128,144.57 160,200 96,200"/>
+                </svg>
+                <span class="font-bold tracking-tight text-lg">ARGUS</span>
+            </a>
+            
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-white/70">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse-slow"></span>
+                    <span>v1.0.0-PROD</span>
+                </div>
+                <button id="menu-btn" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all duration-500 ease-fluid group relative z-50 cursor-pointer" aria-label="Toggle navigation menu">
+                    <span class="w-4 h-0.5 bg-white rounded-full transition-all duration-500 ease-fluid absolute -translate-y-1" id="bar-top"></span>
+                    <span class="w-4 h-0.5 bg-white rounded-full transition-all duration-500 ease-fluid absolute translate-y-1" id="bar-bot"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Fullscreen Fluid Modal Navigation Overlay -->
+    <div id="menu-modal" class="fixed inset-0 z-30 pointer-events-none opacity-0 backdrop-blur-3xl bg-black/85 transition-opacity duration-700 ease-fluid flex flex-col justify-center items-center px-6">
+        <div class="w-full max-w-md flex flex-col items-center text-center space-y-6">
+            <div class="text-[10px] uppercase tracking-[0.3em] text-cyan-400 font-mono mb-2 menu-item translate-y-8 opacity-0 transition-all duration-700 ease-fluid">
+                Navigation
+            </div>
+            <a href="#hero" class="menu-link text-3xl md:text-5xl font-medium tracking-tight hover:text-cyan-400 transition-colors duration-300 menu-item translate-y-8 opacity-0 transition-all duration-700 ease-fluid">
+                Overview
+            </a>
+            <a href="#risk" class="menu-link text-3xl md:text-5xl font-medium tracking-tight hover:text-cyan-400 transition-colors duration-300 menu-item translate-y-8 opacity-0 transition-all duration-700 ease-fluid">
+                Risk Policy
+            </a>
+            <a href="#gated" class="menu-link text-3xl md:text-5xl font-medium tracking-tight hover:text-cyan-400 transition-colors duration-300 menu-item translate-y-8 opacity-0 transition-all duration-700 ease-fluid">
+                Gated Improvement
+            </a>
+            <a href="#recovery" class="menu-link text-3xl md:text-5xl font-medium tracking-tight hover:text-cyan-400 transition-colors duration-300 menu-item translate-y-8 opacity-0 transition-all duration-700 ease-fluid">
+                Recovery
+            </a>
+            <a href="#commands" class="menu-link text-3xl md:text-5xl font-medium tracking-tight hover:text-cyan-400 transition-colors duration-300 menu-item translate-y-8 opacity-0 transition-all duration-700 ease-fluid">
+                Commands
+            </a>
+            <a href="#security" class="menu-link text-3xl md:text-5xl font-medium tracking-tight hover:text-cyan-400 transition-colors duration-300 menu-item translate-y-8 opacity-0 transition-all duration-700 ease-fluid">
+                Security
+            </a>
+            
+            <div class="pt-8 w-full border-t border-white/10 flex flex-col items-center gap-4 menu-item translate-y-8 opacity-0 transition-all duration-700 ease-fluid">
+                <a href="https://t.me/argus_controlbot" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-3 bg-white text-black rounded-full px-6 py-3 font-semibold text-sm hover:bg-neutral-200 transition-all duration-500 ease-fluid">
+                    <span>Deploy Control Bot</span>
+                    <i class="ph-light ph-telegram-logo text-base"></i>
+                </a>
+                <span class="text-[11px] font-mono text-white/40">Numeric telegram identity authorization enforced</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <main id="hero" class="flex-grow flex flex-col items-center pt-48 pb-24 px-4 w-full max-w-7xl mx-auto z-10">
+        <header class="text-center w-full max-w-5xl flex flex-col items-center reveal delay-100">
+            <div class="rounded-full bg-cyan-400/10 ring-1 ring-cyan-400/30 px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] font-medium text-cyan-400 mb-8 inline-block shadow-[inset_0_1px_1px_rgba(0,217,255,0.2)]">
+                Long-only spot • Zero leverage
+            </div>
+            <h1 class="text-5xl md:text-8xl font-medium tracking-tighter leading-[1.05] mb-8 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40">
+                Autonomous spot trading.<br/>Engineered for discipline.
+            </h1>
+            <p class="text-lg md:text-xl text-white/50 max-w-2xl font-light mb-12 leading-relaxed">
+                Operated entirely through Telegram. Strict capital limits, immutable architecture, and silent background execution. You control the mandate; Argus enforces the rules.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row items-center gap-6">
+                <a href="https://t.me/argus_controlbot" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-4 bg-white text-black rounded-full pl-8 pr-2 py-2 hover:bg-neutral-200 transition-all duration-500 ease-fluid active:scale-[0.98]">
+                    <span class="font-semibold tracking-wide text-sm">Deploy Control Bot</span>
+                    <div class="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center transition-transform duration-500 ease-fluid group-hover:translate-x-1 group-hover:-translate-y-[1px] group-hover:scale-105">
+                        <i class="ph-light ph-telegram-logo text-lg text-black"></i>
+                    </div>
+                </a>
+            </div>
+        </header>
+
+        <!-- Abstract Telegram Interface Mockup -->
+        <div class="w-full max-w-5xl mt-24 md:mt-32 reveal delay-200 group">
+            <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-[2rem] p-2 transition-transform duration-700 ease-fluid group-hover:-translate-y-2">
+                <div class="bg-[#080808] rounded-[calc(2rem-0.5rem)] w-full p-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] relative overflow-hidden flex flex-col md:flex-row gap-2 h-auto md:h-[640px] min-h-[560px]">
+                    <!-- Split: Control Bot (Like Telegram) -->
+                    <div class="flex-1 bg-[#0f0f0f] rounded-[1.5rem] flex flex-col border border-white/5 relative overflow-hidden">
+                        <!-- Telegram Header -->
+                        <div class="h-16 border-b border-white/5 bg-[#141414] px-4 flex items-center gap-3 shrink-0">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-600 to-cyan-400 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                AC
+                            </div>
+                            <div class="flex flex-col">
+                                <div class="text-sm font-semibold text-white flex items-center gap-2">
+                                    Argus Control <span class="text-[9px] uppercase tracking-wider text-cyan-400 bg-cyan-400/10 px-1.5 py-0.5 rounded">bot</span>
+                                </div>
+                                <div class="text-[11px] text-white/40">Dedicated command authority</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat Area -->
+                        <div class="flex-1 p-4 flex flex-col gap-4 overflow-hidden justify-end bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMGYwZjBmIi8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMxYjFiMWIiLz4KPC9zdmc+')] bg-repeat">
+                            <!-- User Message -->
+                            <div class="flex justify-end w-full">
+                                <div class="bg-cyan-600 text-white text-sm px-4 py-2 rounded-2xl rounded-tr-sm max-w-[85%] shadow-sm">
+                                    /run alpha-btc
+                                </div>
+                            </div>
+                            <!-- Bot Message -->
+                            <div class="flex justify-start w-full">
+                                <div class="bg-[#212121] border border-white/5 text-white/90 text-sm px-4 py-2.5 rounded-2xl rounded-tl-sm max-w-[85%] shadow-sm font-mono text-xs space-y-1">
+                                    <div class="text-cyan-400 font-sans font-semibold mb-1 text-[11px] uppercase tracking-wider">System</div>
+                                    <div>[idempotent] desired state: RUNNING</div>
+                                    <div>epoch lease acquired.</div>
+                                </div>
+                            </div>
+                            <!-- User Message -->
+                            <div class="flex justify-end w-full mt-2">
+                                <div class="bg-cyan-600 text-white text-sm px-4 py-2 rounded-2xl rounded-tr-sm max-w-[85%] shadow-sm">
+                                    /list
+                                </div>
+                            </div>
+                            <!-- Bot Message -->
+                            <div class="flex justify-start w-full mb-2">
+                                <div class="bg-[#212121] border border-white/5 text-white/90 text-sm px-4 py-2.5 rounded-2xl rounded-tl-sm max-w-[85%] shadow-sm font-mono text-[10px] space-y-1">
+                                    <div class="text-cyan-400 font-sans font-semibold mb-1 text-[11px] uppercase tracking-wider">System</div>
+                                    <div class="text-white">ID: alpha-btc</div>
+                                    <div>State: RUNNING • HEALTHY</div>
+                                    <div>Alloc: 2,500 USD (10%)</div>
+                                    <div>Exposure: 742.50 USD</div>
+                                    <div>Realized P&L: <span class="text-emerald-400">+$142.80</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Telegram Input -->
+                        <div class="h-14 bg-[#141414] px-4 flex items-center gap-3 shrink-0 border-t border-white/5">
+                            <i class="ph-light ph-paperclip text-xl text-white/40"></i>
+                            <div class="flex-1 h-9 rounded-full bg-white/5 flex items-center px-4 text-sm text-white/30">
+                                Message...
+                            </div>
+                            <div class="w-9 h-9 rounded-full bg-cyan-600 flex items-center justify-center">
+                                <i class="ph-light ph-microphone text-lg text-white"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Split: Alerts Bot (Like Telegram) -->
+                    <div class="flex-1 bg-[#0f0f0f] rounded-[1.5rem] flex flex-col border border-white/5 relative overflow-hidden">
+                        <!-- Telegram Header -->
+                        <div class="h-16 border-b border-white/5 bg-[#141414] px-4 flex items-center gap-3 shrink-0">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                AA
+                            </div>
+                            <div class="flex flex-col">
+                                <div class="text-sm font-semibold text-white flex items-center gap-2">
+                                    Argus Alerts <span class="text-[9px] uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">bot</span>
+                                </div>
+                                <div class="text-[11px] text-white/40">Read-only operational telemetry</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Chat Area -->
+                        <div class="flex-1 p-4 flex flex-col gap-3 overflow-hidden justify-end bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMGYwZjBmIi8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMxYjFiMWIiLz4KPC9zdmc+')] bg-repeat">
+                            <!-- Bot Message: Opportunity -->
+                            <div class="flex justify-start w-full">
+                                <div class="bg-[#212121] border border-white/5 text-white/90 text-sm px-4 py-2 rounded-2xl rounded-tl-sm max-w-[90%] shadow-sm space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+                                        <div class="text-blue-400 font-sans font-semibold text-[10px] uppercase tracking-wider">Opportunity</div>
+                                        <span class="text-[9px] text-white/40 font-mono ml-auto">14:10 UTC</span>
+                                    </div>
+                                    <div class="font-mono text-[11px] leading-snug">
+                                        BUY Signal: SOL/USD (15m candle)<br>
+                                        Model: <span class="text-white/70">v2.4-test</span> • Sizing: <span class="text-white/70">0.25% stop-budget</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bot Message: Execution -->
+                            <div class="flex justify-start w-full">
+                                <div class="bg-[#212121] border border-white/5 text-white/90 text-sm px-4 py-2 rounded-2xl rounded-tl-sm max-w-[90%] shadow-sm space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-cyan-400"></div>
+                                        <div class="text-cyan-400 font-sans font-semibold text-[10px] uppercase tracking-wider">Execution</div>
+                                        <span class="text-[9px] text-white/40 font-mono ml-auto">14:18 UTC</span>
+                                    </div>
+                                    <div class="font-mono text-[11px] leading-snug">
+                                        Filled: SELL BTC/USD (0.015)<br>
+                                        Net P&L: <span class="text-emerald-400">+0.42%</span> (incl. fees)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bot Message: Risk Snapshot -->
+                            <div class="flex justify-start w-full">
+                                <div class="bg-[#212121] border border-white/5 text-white/90 text-sm px-4 py-2 rounded-2xl rounded-tl-sm max-w-[90%] shadow-sm space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+                                        <div class="text-amber-400 font-sans font-semibold text-[10px] uppercase tracking-wider">Risk Telemetry</div>
+                                        <span class="text-[9px] text-white/40 font-mono ml-auto">14:30 UTC</span>
+                                    </div>
+                                    <div class="font-mono text-[11px] leading-snug">
+                                        Open exposure: <span class="text-white/70">18.4%</span> / 30% cap<br>
+                                        Drawdown from HWM: <span class="text-white/70">0.8%</span> (5% halt ceiling)
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bot Message: Promotion -->
+                            <div class="flex justify-start w-full mb-1">
+                                <div class="bg-[#212121] border border-white/5 text-white/90 text-sm px-4 py-2 rounded-2xl rounded-tl-sm max-w-[90%] shadow-sm space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                                        <div class="text-emerald-400 font-sans font-semibold text-[10px] uppercase tracking-wider">Promotion</div>
+                                        <span class="text-[9px] text-white/40 font-mono ml-auto">14:45 UTC</span>
+                                    </div>
+                                    <div class="font-mono text-[11px] leading-snug">
+                                        Bundle activated: <span class="text-white/70">v2.4-test</span><br>
+                                        Shadow eval passed • Prior exits preserved
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Telegram Input (Muted for alerts) -->
+                        <div class="h-14 bg-[#141414] px-4 flex items-center justify-center shrink-0 border-t border-white/5">
+                            <div class="text-[11px] font-medium text-white/30 uppercase tracking-widest flex items-center gap-2">
+                                <i class="ph-light ph-speaker-slash"></i> Read-only channel
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="h-32 md:h-48"></div>
+
+        <!-- Risk Policy Subheading -->
+        <div id="risk" class="w-full max-w-5xl mb-12 flex flex-col items-start reveal pt-12">
+            <span class="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium border border-white/10 text-rose-400 mb-4 bg-rose-400/5 inline-block">Hard Boundaries</span>
+            <h2 class="text-4xl font-medium tracking-tight">Risk admission policy.</h2>
+            <p class="text-white/40 mt-4 max-w-2xl font-light">
+                Rules enforced at the engine boundary before any order touches an exchange. Argus cannot increase limits, and missing requirements block activation.
+            </p>
+        </div>
+
+        <!-- Risk Grid -->
+        <section class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 mb-32">
+            
+            <div class="reveal delay-100 group">
+                <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-[2rem] p-1.5 transition-transform duration-700 ease-fluid group-hover:-translate-y-1 h-full">
+                    <div class="bg-[#080808] rounded-[calc(2rem-0.375rem)] h-full p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] relative overflow-hidden">
+                        <i class="ph-light ph-prohibit text-3xl text-rose-400 mb-4"></i>
+                        <h3 class="text-xl font-medium mb-2">5% Account Drawdown</h3>
+                        <p class="text-sm text-white/40 leading-relaxed mb-6">Hard stop from high-water mark. Requires audited owner <code>/reset_risk</code> command to unlock. 2% daily loss trigger locks entries for the UTC session.</p>
+                        <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div class="w-[5%] h-full bg-rose-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reveal delay-200 group">
+                <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-[2rem] p-1.5 transition-transform duration-700 ease-fluid group-hover:-translate-y-1 h-full">
+                    <div class="bg-[#080808] rounded-[calc(2rem-0.375rem)] h-full p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] relative overflow-hidden">
+                        <i class="ph-light ph-chart-pie-slice text-3xl text-white/40 mb-4"></i>
+                        <h3 class="text-xl font-medium mb-2">Strict Allocation Capping</h3>
+                        <p class="text-sm text-white/40 leading-relaxed mb-6">Total open exposure cannot exceed 30% of allocated equity. Individual assets capped at 10%. Position increases and leverage are strictly disabled.</p>
+                        <div class="flex gap-2 w-full h-1">
+                            <div class="w-[10%] bg-cyan-400 rounded-full"></div>
+                            <div class="w-[10%] bg-cyan-400 rounded-full"></div>
+                            <div class="w-[10%] bg-cyan-400 rounded-full"></div>
+                            <div class="flex-1 bg-white/5 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reveal delay-100 group">
+                <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-[2rem] p-1.5 transition-transform duration-700 ease-fluid group-hover:-translate-y-1 h-full">
+                    <div class="bg-[#080808] rounded-[calc(2rem-0.375rem)] h-full p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] relative overflow-hidden">
+                        <i class="ph-light ph-scale text-3xl text-amber-400 mb-4"></i>
+                        <h3 class="text-xl font-medium mb-2">0.25% Max Loss Per Position</h3>
+                        <p class="text-sm text-white/40 leading-relaxed mb-6">Stop-loss budget per new trade. Position sizing respects this hard limit before submission, never after.</p>
+                        <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div class="w-[0.25%] h-full bg-amber-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reveal delay-200 group">
+                <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-[2rem] p-1.5 transition-transform duration-700 ease-fluid group-hover:-translate-y-1 h-full">
+                    <div class="bg-[#080808] rounded-[calc(2rem-0.375rem)] h-full p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] relative overflow-hidden">
+                        <i class="ph-light ph-cpu text-3xl text-blue-400 mb-4"></i>
+                        <h3 class="text-xl font-medium mb-2">Single Execution Runtime</h3>
+                        <p class="text-sm text-white/40 leading-relaxed mb-6">One physical execution worker per account. Conflicting strategies cannot run simultaneously on the same exchange allocation.</p>
+                        <div class="flex items-center gap-3 text-xs text-white/40 font-mono">
+                            <i class="ph-light ph-cpu text-xs"></i> Exclusive lease • Atomic fencing
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Gated Improvement Workflow -->
+        <section id="gated" class="w-full max-w-5xl mb-32 border-t border-white/5 pt-32 flex flex-col md:flex-row gap-16 md:gap-8 items-center reveal">
+            <!-- Left: Massive Typography -->
+            <div class="w-full md:w-1/2 flex flex-col items-start pr-0 md:pr-8">
+                <span class="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium border border-white/10 text-emerald-400 mb-6 bg-emerald-400/5">Gated Promotion</span>
+                <h2 class="text-5xl md:text-6xl font-medium tracking-tighter leading-[1.1] mb-6">
+                    Research is fenced.<br>
+                    <span class="text-white/40">Production is immutable.</span>
+                </h2>
+                <p class="text-lg text-white/50 font-light leading-relaxed max-w-md">
+                    Learning happens in isolation. Models cannot authorize their own promotion, and live execution logic never changes retroactively.
+                </p>
+            </div>
+
+            <!-- Right: Z-Axis Cascade Pipeline -->
+            <div class="w-full md:w-1/2 relative h-[400px] flex items-center justify-center">
+                <!-- Card 1: Research -->
+                <div class="absolute w-[80%] max-w-[320px] bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 shadow-2xl z-10 -translate-y-20 -translate-x-8 -rotate-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                            <i class="ph-light ph-flask text-white/50"></i>
+                        </div>
+                        <div class="text-sm font-medium">Isolated Training</div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full w-[40%] bg-white/20"></div>
+                        </div>
+                        <div class="text-[10px] text-white/40 font-mono uppercase">Zero live credentials</div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Shadow -->
+                <div class="absolute w-[80%] max-w-[320px] bg-[#0d0d0d] border border-cyan-500/20 rounded-3xl p-6 shadow-[0_20px_40px_rgba(0,0,0,0.8)] z-20 translate-y-0 rotate-1 backdrop-blur-xl">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-8 h-8 rounded-full bg-cyan-400/10 flex items-center justify-center">
+                            <i class="ph-light ph-ghost text-cyan-400"></i>
+                        </div>
+                        <div class="text-sm font-medium">Shadow Evaluation</div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full w-[70%] bg-cyan-400/50"></div>
+                        </div>
+                        <div class="text-[10px] text-white/40 font-mono uppercase">Forward testing & metrics</div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Activation -->
+                <div class="absolute w-[80%] max-w-[320px] bg-[#111111] border border-emerald-500/30 rounded-3xl p-6 shadow-[0_30px_60px_rgba(0,0,0,0.9)] z-30 translate-y-20 translate-x-8 -rotate-1 backdrop-blur-2xl ring-1 ring-emerald-500/10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-emerald-400/10 flex items-center justify-center">
+                                <i class="ph-light ph-check-circle text-emerald-400"></i>
+                            </div>
+                            <div class="text-sm font-medium">Immutable Activation</div>
+                        </div>
+                        <div class="text-[9px] uppercase tracking-widest text-emerald-400 border border-emerald-400/20 px-2 py-1 rounded-full">Approved</div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full w-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        </div>
+                        <div class="text-[10px] text-white/40 font-mono uppercase">Atomic bundle update</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cold Start Recovery Section -->
+        <section id="recovery" class="w-full max-w-5xl mb-32 pt-32 reveal">
+            <div class="flex flex-col md:flex-row gap-8 items-start mb-16">
+                <div class="w-full md:w-1/2">
+                    <span class="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium border border-white/10 text-blue-400 mb-6 bg-blue-400/5 inline-block">Safe Startup</span>
+                    <h2 class="text-5xl md:text-6xl font-medium tracking-tighter leading-[1.1] mb-6">
+                        Start safe.<br/>
+                        <span class="text-white/40">Stay reconciled.</span>
+                    </h2>
+                    <p class="text-lg text-white/50 font-light leading-relaxed">
+                        No automatic trading after restart. System proves integrity before acting. Admission opens only after every check passes.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Timeline Flow -->
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-6 w-full">
+                <!-- Step 1 -->
+                <div class="reveal delay-100 group">
+                    <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-2xl p-5 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 font-mono text-xs font-semibold">01</div>
+                            <div class="w-full h-0.5 bg-white/5 relative">
+                                <div class="absolute left-0 top-0 h-full w-full bg-gradient-to-r from-blue-400/50 to-transparent"></div>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-white/90">State Restoration</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">Desired states & ownership records loaded from persistent store.</p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="reveal delay-150 group">
+                    <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-2xl p-5 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 font-mono text-xs font-semibold">02</div>
+                            <div class="w-full h-0.5 bg-white/5 relative">
+                                <div class="absolute left-0 top-0 h-full w-full bg-gradient-to-r from-blue-400/50 to-transparent"></div>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-white/90">Order Reconciliation</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">Local intents matched against venue. Ambiguity preserved, not guessed.</p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="reveal delay-200 group">
+                    <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-2xl p-5 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 font-mono text-xs font-semibold">03</div>
+                            <div class="w-full h-0.5 bg-white/5 relative">
+                                <div class="absolute left-0 top-0 h-full w-full bg-gradient-to-r from-cyan-400/50 to-transparent"></div>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-white/90">Balance Verification</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">Positions & fills reconciled. Reservations resolved or retained.</p>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="reveal delay-250 group">
+                    <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-2xl p-5 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 font-mono text-xs font-semibold">04</div>
+                            <div class="w-full h-0.5 bg-white/5 relative">
+                                <div class="absolute left-0 top-0 h-full w-full bg-gradient-to-r from-cyan-400/50 to-transparent"></div>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-white/90">Protection Validation</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">Exit orders & policy limits confirmed active. Safety critical.</p>
+                    </div>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="reveal delay-300 group">
+                    <div class="bg-emerald-500/5 ring-1 ring-emerald-500/30 rounded-2xl p-5 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-emerald-400/20 flex items-center justify-center">
+                                <i class="ph-light ph-check text-emerald-400"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-emerald-400">Admission Opens</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">All checks passed. Eligible bots resume. Entries unblocked.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Command Interface Cards Grid -->
+        <div id="commands" class="w-full max-w-5xl mb-12 flex flex-col items-start reveal pt-12">
+            <span class="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium border border-white/10 text-cyan-400 mb-4 bg-cyan-400/5 inline-block">Command Terminal</span>
+            <h2 class="text-4xl font-medium tracking-tight">Immutable operational lifecycle.</h2>
+            <p class="text-white/40 mt-4 max-w-2xl font-light">
+                Complete control over the trading mandate via numeric identity authorization. Every command records idempotent intents without racing physical executions.
+            </p>
+        </div>
+
+        <section class="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-32">
+            <div class="reveal delay-100 bg-white/[0.02] border border-white/5 rounded-2xl p-6 group hover:border-white/10 transition-colors">
+                <code class="text-cyan-400 text-sm font-mono mb-2 block">/run &lt;id&gt;</code>
+                <p class="text-xs text-white/50 leading-relaxed group-hover:text-white/70 transition-colors">Starts or resumes an eligible trading bot after strict policy and balance reconciliation.</p>
+            </div>
+            <div class="reveal delay-150 bg-white/[0.02] border border-white/5 rounded-2xl p-6 group hover:border-white/10 transition-colors">
+                <code class="text-amber-400 text-sm font-mono mb-2 block">/pause &lt;id&gt;</code>
+                <p class="text-xs text-white/50 leading-relaxed group-hover:text-white/70 transition-colors">Blocks entries, cancels pending buys, reconciles fills, and actively maintains protective exits.</p>
+            </div>
+            <div class="reveal delay-200 bg-white/[0.02] border border-white/5 rounded-2xl p-6 group hover:border-white/10 transition-colors">
+                <code class="text-rose-400 text-sm font-mono mb-2 block">/close &lt;id&gt;</code>
+                <p class="text-xs text-white/50 leading-relaxed group-hover:text-white/70 transition-colors">Pauses entries, resolves pending buys, and immediately liquidates owned positions.</p>
+            </div>
+            <div class="reveal delay-100 bg-white/[0.02] border border-white/5 rounded-2xl p-6 group hover:border-white/10 transition-colors">
+                <code class="text-rose-500 text-sm font-mono mb-2 block">/halt</code>
+                <p class="text-xs text-white/50 leading-relaxed group-hover:text-white/70 transition-colors">Owner-enforced account block. Completely fences new exposure while keeping existing limits alive.</p>
+            </div>
+            <div class="reveal delay-150 bg-white/[0.02] border border-white/5 rounded-2xl p-6 group hover:border-white/10 transition-colors">
+                <code class="text-emerald-400 text-sm font-mono mb-2 block">/resume_account</code>
+                <p class="text-xs text-white/50 leading-relaxed group-hover:text-white/70 transition-colors">Removes account halt. Requires fresh reconciliation and unblocked epoch execution.</p>
+            </div>
+            <div class="reveal delay-200 bg-white/[0.02] border border-white/5 rounded-2xl p-6 group hover:border-white/10 transition-colors">
+                <code class="text-white text-sm font-mono mb-2 block">/detail &lt;id&gt;</code>
+                <p class="text-xs text-white/50 leading-relaxed group-hover:text-white/70 transition-colors">Displays reconciled positions, performance, risk baselines, and current admission reasons.</p>
+            </div>
+        </section>
+
+        <!-- Security & Operational Integrity -->
+        <section id="security" class="w-full max-w-5xl mb-32 pt-32 border-t border-white/5 reveal">
+            <div class="flex flex-col md:flex-row gap-8 items-start mb-16">
+                <div class="w-full md:w-1/2">
+                    <span class="rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium border border-white/10 text-cyan-400 mb-6 bg-cyan-400/5 inline-block">Zero Trust</span>
+                    <h2 class="text-5xl md:text-6xl font-medium tracking-tighter leading-[1.1] mb-6">
+                        Zero trust.<br/>
+                        <span class="text-white/40">Maximum transparency.</span>
+                    </h2>
+                    <p class="text-lg text-white/50 font-light leading-relaxed">
+                        Credentials stay fenced. Recovery ledgers are encrypted. And every command is auditable.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Security Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+                <!-- Card 1 -->
+                <div class="reveal delay-100 group">
+                    <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-2xl p-6 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                                <i class="ph-light ph-shield-warning text-white/60"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-white/90">Credentials Fenced</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">No exchange secrets in Telegram, logs, model prompts, or external services. Research has zero live access.</p>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="reveal delay-150 group">
+                    <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-2xl p-6 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                                <i class="ph-light ph-lock-key text-white/60"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-white/90">Trade/Read Only</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">Withdrawal permissions disabled at the API level. Argus cannot move funds out of the exchange account.</p>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="reveal delay-200 group">
+                    <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-2xl p-6 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                                <i class="ph-light ph-receipt text-white/60"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-white/90">Audit Trail</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">Every command recorded with idempotent intent signatures. Owners can verify action lineage and reversibility.</p>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="reveal delay-250 group">
+                    <div class="bg-white/[0.02] ring-1 ring-white/10 rounded-2xl p-6 h-full transition-transform duration-700 ease-fluid group-hover:-translate-y-1 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                                <i class="ph-light ph-hard-drive text-white/60"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-base font-medium mb-2 text-white/90">Recovery Ledger</h3>
+                        <p class="text-xs text-white/40 leading-relaxed">Encrypted backups and restoration procedures. Atomic snapshots ensure no data loss during host failure.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Stats Strip -->
+    <div class="border-y border-white/10 bg-white/[0.01] reveal delay-100 w-full">
+        <div class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-white/5">
+            <div>
+                <div class="text-2xl font-light mb-1">0.25%</div>
+                <div class="text-[10px] uppercase tracking-widest text-white/30">Max Loss Per Position</div>
+            </div>
+            <div>
+                <div class="text-2xl font-light mb-1">100%</div>
+                <div class="text-[10px] uppercase tracking-widest text-white/30">Isolated Research</div>
+            </div>
+            <div>
+                <div class="text-2xl font-light mb-1">Dual</div>
+                <div class="text-[10px] uppercase tracking-widest text-white/30">Telegram Identities</div>
+            </div>
+            <div>
+                <div class="text-2xl font-light mb-1">Zero</div>
+                <div class="text-[10px] uppercase tracking-widest text-white/30">Withdrawal Perms</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-7xl mx-auto px-4 py-12 flex flex-col gap-6 text-xs text-white/30 font-medium tracking-wide uppercase mt-12 z-10 pb-24">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <svg width="16" height="16" fill="#ffffff" viewBox="0 0 256 256" class="opacity-50" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 128 44 L 218 200 L 178 200 L 128 113.4 L 78 200 L 38 200 Z"/>
+                    <polygon points="128,144.57 160,200 96,200"/>
+                </svg>
+                Argus Core System © 2026
+            </div>
+            <div class="flex items-center gap-6">
+                <span class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+                    System Operational
+                </span>
+                <a href="https://t.me/argus_controlbot" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors duration-300">Deploy Control Bot</a>
+            </div>
+        </div>
+        <div class="text-[11px] normal-case tracking-normal text-white/20 text-center md:text-left border-t border-white/5 pt-6">
+            Trading cryptocurrencies involves substantial risk of loss. Past simulation or performance does not guarantee future results. Automation operates exclusively within owner-defined boundaries. Not financial advice.
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+            // Menu toggle logic
+            const menuBtn = document.getElementById('menu-btn');
+            const menuModal = document.getElementById('menu-modal');
+            const barTop = document.getElementById('bar-top');
+            const barBot = document.getElementById('bar-bot');
+            const menuLinks = document.querySelectorAll('.menu-link');
+            const menuItems = document.querySelectorAll('.menu-item');
+            let isMenuOpen = false;
+
+            function openMenu() {
+                isMenuOpen = true;
+                menuModal.classList.remove('pointer-events-none', 'opacity-0');
+                menuModal.classList.add('pointer-events-auto', 'opacity-100');
+                barTop.classList.add('rotate-45', 'translate-y-0');
+                barTop.classList.remove('-translate-y-1');
+                barBot.classList.add('-rotate-45', 'translate-y-0');
+                barBot.classList.remove('translate-y-1');
+                
+                // Stagger reveal menu items
+                menuItems.forEach((item, index) => {
+                    setTimeout(() => {
+                        item.classList.remove('translate-y-8', 'opacity-0');
+                        item.classList.add('translate-y-0', 'opacity-100');
+                    }, 100 + index * 80);
+                });
+            }
+
+            function closeMenu() {
+                isMenuOpen = false;
+                menuModal.classList.remove('pointer-events-auto', 'opacity-100');
+                menuModal.classList.add('pointer-events-none', 'opacity-0');
+                barTop.classList.remove('rotate-45', 'translate-y-0');
+                barTop.classList.add('-translate-y-1');
+                barBot.classList.remove('-rotate-45', 'translate-y-0');
+                barBot.classList.add('translate-y-1');
+                
+                // Reset menu items
+                menuItems.forEach(item => {
+                    item.classList.add('translate-y-8', 'opacity-0');
+                    item.classList.remove('translate-y-0', 'opacity-100');
+                });
+            }
+
+            menuBtn.addEventListener('click', () => {
+                if (isMenuOpen) {
+                    closeMenu();
+                } else {
+                    openMenu();
+                }
+            });
+
+            menuLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    closeMenu();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
